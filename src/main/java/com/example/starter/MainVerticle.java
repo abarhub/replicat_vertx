@@ -2,6 +2,7 @@ package com.example.starter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.BaseEncoding;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Promise;
@@ -10,6 +11,7 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.logging.SLF4JLogDelegateFactory;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.LoggerFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,6 +52,7 @@ public class MainVerticle extends AbstractVerticle {
 //    router.route().handler(LogHandler.create());
     LoggerFormat loggerFormat = LoggerFormat.DEFAULT;
     router.route().handler(RequestLogHandler.create(loggerFormat));
+    router.route().handler(BodyHandler.create());
 
 //    router.route().handler(ctx -> {
 //
@@ -105,7 +110,7 @@ public class MainVerticle extends AbstractVerticle {
 
                 tmp = listeGestionFichiers.get(id).listeFichiers(liste);
                 LOGGER.info("listeFichiers $id OK");
-              } catch (IOException e) {
+              } catch (IOException | NoSuchAlgorithmException e) {
                 LOGGER.error("erreur pour lire le data", e);
               }
             } else {
@@ -247,6 +252,14 @@ class ListFiles2 {
   public void setCode(String code) {
     this.code = code;
   }
+
+  @Override
+  public String toString() {
+    return "ListFiles2{" +
+      "liste=" + liste +
+      ", code='" + code + '\'' +
+      '}';
+  }
 }
 
 class Files2 {
@@ -296,6 +309,16 @@ class Files2 {
   public void setType(String type) {
     this.type = type;
   }
+
+  @Override
+  public String toString() {
+    return "Files2{" +
+      "filename='" + filename + '\'' +
+      ", size=" + size +
+      ", hash='" + hash + '\'' +
+      ", type='" + type + '\'' +
+      '}';
+  }
 }
 
 class GestionFichiers {
@@ -309,9 +332,9 @@ class GestionFichiers {
     this.id = id;
   }
 
-  public ListFiles2 listeFichiers(ListFiles2 listeFiles2) throws IOException {
+  public ListFiles2 listeFichiers(ListFiles2 listeFiles2) throws IOException, NoSuchAlgorithmException {
 //    val body = ctx.body()
-    LOGGER.info("request3 is $body");
+    LOGGER.info("request3 is {}",listeFiles2);
     var res = "";
 
 //    if (body != null && body.contains("=")) {
@@ -374,8 +397,9 @@ class GestionFichiers {
 //  fun hashString(str: ByteArray, algorithm: String): ByteArray =
 //    MessageDigest.getInstance(algorithm).digest(str)
 
-  private String hashString(byte[] buf) {
-    return null;
+  private String hashString(byte[] buf) throws NoSuchAlgorithmException {
+    var b= MessageDigest.getInstance("SHA-256").digest(buf);
+    return BaseEncoding.base16().lowerCase().encode(b);
   }
 
   public String upload(MultiMap attributes) throws IOException {
