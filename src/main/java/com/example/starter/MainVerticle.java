@@ -45,7 +45,7 @@ public class MainVerticle extends AbstractVerticle {
 
     HttpServer server = vertx.createHttpServer();
 
-    if(false) {
+    if(true) {
       // Déployer le verticle HTTP
       vertx.deployVerticle(new HttpServerVerticle());
 
