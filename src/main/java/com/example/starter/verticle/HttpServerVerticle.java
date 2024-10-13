@@ -61,20 +61,36 @@ public class HttpServerVerticle extends AbstractVerticle {
 
     router.route("/init").method(HttpMethod.POST).blockingHandler(
       ctx -> {
-        int nb = counter.getAndIncrement();
+//        int nb = counter.getAndIncrement();
+
+
 
         MultiMap attributes = ctx.request().formAttributes();
         LOGGER.atInfo().log("init form: {}", attributes.entries());
 
-        HttpServerResponse response = ctx.response();
-        response.putHeader("content-type", "text/plain");
+//        HttpServerResponse response = ctx.response();
+//        response.putHeader("content-type", "text/plain");
 //      var res=Future.succeededFuture(nb);
-        LOGGER.atInfo().log("init id: {}", nb);
-        var gestion = new GestionFichiers(nb);
-//        gestion.id = no;
-        listeGestionFichiers.put(nb, gestion);
-        LOGGER.info("creation de la session {}", nb);
-        response.end("" + nb);
+//        LOGGER.atInfo().log("init id: {}", nb);
+//        var gestion = new GestionFichiers(nb);
+////        gestion.id = no;
+//        listeGestionFichiers.put(nb, gestion);
+
+        vertx.eventBus().request("worker.init", "Processing task for client", reply -> {
+          if (reply.succeeded()) {
+            var nb="";
+            LOGGER.info("creation de la session {}", nb);
+            nb=(String) reply.result().body();
+            ctx.response()
+              .putHeader("content-type", "text/plain")
+              .end(nb);
+          } else {
+            ctx.response().setStatusCode(500).end("Erreur lors du traitement.");
+          }
+        });
+
+//        LOGGER.info("creation de la session {}", nb);
+//        response.end("" + nb);
       }
     );
 
