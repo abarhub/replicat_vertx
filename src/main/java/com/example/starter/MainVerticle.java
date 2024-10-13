@@ -53,14 +53,14 @@ public class MainVerticle extends AbstractVerticle {
 //    DeploymentOptions workerOptions = new DeploymentOptions().setWorker(true);
       DeploymentOptions workerOptions = new DeploymentOptions().setThreadingModel(ThreadingModel.WORKER);
       vertx.deployVerticle(new WorkerVerticle(), workerOptions);
-    }
+    } else {
 
-    Router router = Router.router(vertx);
+      Router router = Router.router(vertx);
 
 //    router.route().handler(LogHandler.create());
-    LoggerFormat loggerFormat = LoggerFormat.DEFAULT;
-    router.route().handler(RequestLogHandler.create(loggerFormat));
-    router.route().handler(BodyHandler.create());
+      LoggerFormat loggerFormat = LoggerFormat.DEFAULT;
+      router.route().handler(RequestLogHandler.create(loggerFormat));
+      router.route().handler(BodyHandler.create());
 
 //    router.route().handler(ctx -> {
 //
@@ -72,102 +72,102 @@ public class MainVerticle extends AbstractVerticle {
 //      response.end("Hello World from Vert.x-Web!");
 //    });
 
-    router.route("/init").method(HttpMethod.POST).blockingHandler(
-      ctx -> {
-        int nb = counter.getAndIncrement();
+      router.route("/init").method(HttpMethod.POST).blockingHandler(
+        ctx -> {
+          int nb = counter.getAndIncrement();
 
-        MultiMap attributes = ctx.request().formAttributes();
-        LOGGER.atInfo().log("init form: {}", attributes.entries());
+          MultiMap attributes = ctx.request().formAttributes();
+          LOGGER.atInfo().log("init form: {}", attributes.entries());
 
-        HttpServerResponse response = ctx.response();
-        response.putHeader("content-type", "text/plain");
+          HttpServerResponse response = ctx.response();
+          response.putHeader("content-type", "text/plain");
 //      var res=Future.succeededFuture(nb);
-        LOGGER.atInfo().log("init id: {}", nb);
-        var gestion = new GestionFichiers(nb);
+          LOGGER.atInfo().log("init id: {}", nb);
+          var gestion = new GestionFichiers(nb);
 //        gestion.id = no;
-        listeGestionFichiers.put(nb, gestion);
-        LOGGER.info("creation de la session {}", nb);
-        response.end("" + nb);
-      }
-    );
+          listeGestionFichiers.put(nb, gestion);
+          LOGGER.info("creation de la session {}", nb);
+          response.end("" + nb);
+        }
+      );
 
 
-    router.route("/listeFichiers/:id").method(HttpMethod.POST).blockingHandler(
-      ctx -> {
+      router.route("/listeFichiers/:id").method(HttpMethod.POST).blockingHandler(
+        ctx -> {
 //        int nb = counter.getAndIncrement();
-        String idStr = ctx.pathParam("id");
-        LOGGER.atInfo().log("listeFichiers id: {}", idStr);
-        HttpServerResponse response = ctx.response();
-        response.putHeader("content-type", "text/plain");
+          String idStr = ctx.pathParam("id");
+          LOGGER.atInfo().log("listeFichiers id: {}", idStr);
+          HttpServerResponse response = ctx.response();
+          response.putHeader("content-type", "text/plain");
 //      var res=Future.succeededFuture(nb);
-        var tmp = new ListFiles2();
-        tmp.setListe(new ArrayList<>());
-        tmp.setCode("");
+          var tmp = new ListFiles2();
+          tmp.setListe(new ArrayList<>());
+          tmp.setCode("");
 //        logger.info("liste fichier $idStr ...")
-        if (idStr != null && !idStr.isBlank()) {
-          var id = Integer.parseInt(idStr);
-          if (id > 0 && listeGestionFichiers.containsKey(id)) {
+          if (idStr != null && !idStr.isBlank()) {
+            var id = Integer.parseInt(idStr);
+            if (id > 0 && listeGestionFichiers.containsKey(id)) {
 
-            MultiMap attributes = ctx.request().formAttributes();
-            LOGGER.atInfo().log("listeFichiers form: {}", attributes.entries());
-            var s = attributes.get("data");
-            ObjectMapper mapper = new ObjectMapper();
-            if (s != null) {
-              try {
-                ListFiles2 liste = mapper.readValue(s, ListFiles2.class);
+              MultiMap attributes = ctx.request().formAttributes();
+              LOGGER.atInfo().log("listeFichiers form: {}", attributes.entries());
+              var s = attributes.get("data");
+              ObjectMapper mapper = new ObjectMapper();
+              if (s != null) {
+                try {
+                  ListFiles2 liste = mapper.readValue(s, ListFiles2.class);
 
-                tmp = listeGestionFichiers.get(id).listeFichiers(liste);
-                LOGGER.info("listeFichiers $id OK");
-              } catch (IOException | NoSuchAlgorithmException e) {
-                LOGGER.error("erreur pour lire le data", e);
+                  tmp = listeGestionFichiers.get(id).listeFichiers(liste);
+                  LOGGER.info("listeFichiers $id OK");
+                } catch (IOException | NoSuchAlgorithmException e) {
+                  LOGGER.error("erreur pour lire le data", e);
+                }
+              } else {
+                LOGGER.error("s est vide: '{}'", s);
+                //LOGGER.error("body : '{}'", ctx.request().body());
               }
             } else {
-              LOGGER.error("s est vide: '{}'", s);
-              //LOGGER.error("body : '{}'", ctx.request().body());
+              LOGGER.info("pas de traitement pour $id");
             }
-          } else {
-            LOGGER.info("pas de traitement pour $id");
           }
+          ObjectMapper objectMapper = new ObjectMapper();
+          var res = "";
+          try {
+            res = objectMapper.writeValueAsString(tmp);
+          } catch (JsonProcessingException e) {
+            LOGGER.atError().log("JsonProcessingException", e);
+          }
+          response.end(res);
         }
-        ObjectMapper objectMapper = new ObjectMapper();
-        var res = "";
-        try {
-          res = objectMapper.writeValueAsString(tmp);
-        } catch (JsonProcessingException e) {
-          LOGGER.atError().log("JsonProcessingException", e);
-        }
-        response.end(res);
-      }
-    );
+      );
 
-    router.route("/upload/:id").method(HttpMethod.POST).blockingHandler(
-      ctx -> {
+      router.route("/upload/:id").method(HttpMethod.POST).blockingHandler(
+        ctx -> {
 //        int nb = counter.getAndIncrement();
-        String res = "";
-        String idStr = ctx.pathParam("id");
-        LOGGER.atInfo().log("upload id: {}", idStr);
-        LOGGER.info("upload $idStr ...");
-        //var idStr=attributes.get("data");
-        if (idStr != null && !idStr.isBlank()) {
-          var id = Integer.parseInt(idStr);
-          if (id > 0 && listeGestionFichiers.containsKey(id)) {
-            MultiMap attributes = ctx.request().formAttributes();
-            try {
-              res = listeGestionFichiers.get(id).upload(attributes);
-            } catch (IOException e) {
-              LOGGER.error("erreur pour uploader le fichier", e);
+          String res = "";
+          String idStr = ctx.pathParam("id");
+          LOGGER.atInfo().log("upload id: {}", idStr);
+          LOGGER.info("upload $idStr ...");
+          //var idStr=attributes.get("data");
+          if (idStr != null && !idStr.isBlank()) {
+            var id = Integer.parseInt(idStr);
+            if (id > 0 && listeGestionFichiers.containsKey(id)) {
+              MultiMap attributes = ctx.request().formAttributes();
+              try {
+                res = listeGestionFichiers.get(id).upload(attributes);
+              } catch (IOException e) {
+                LOGGER.error("erreur pour uploader le fichier", e);
+              }
+              LOGGER.info("upload {} OK", idStr);
+            } else {
+              LOGGER.info("pas de traitement pour {}", idStr);
             }
-            LOGGER.info("upload {} OK", idStr);
-          } else {
-            LOGGER.info("pas de traitement pour {}", idStr);
           }
-        }
-        HttpServerResponse response = ctx.response();
-        response.putHeader("content-type", "text/plain");
+          HttpServerResponse response = ctx.response();
+          response.putHeader("content-type", "text/plain");
 //      var res=Future.succeededFuture(nb);
-        response.end(res);
-      }
-    );
+          response.end(res);
+        }
+      );
 
 //    router
 //      .post("/init")
@@ -179,15 +179,16 @@ public class MainVerticle extends AbstractVerticle {
 //          return Future.succeededFuture(nb);
 //        });
 
-    server.requestHandler(router).listen(port)
-      .onComplete(http -> {
-        if (http.succeeded()) {
-          startPromise.complete();
-          System.out.println("HTTP server started on port " + port);
-        } else {
-          startPromise.fail(http.cause());
-        }
-      });
+      server.requestHandler(router).listen(port)
+        .onComplete(http -> {
+          if (http.succeeded()) {
+            startPromise.complete();
+            System.out.println("HTTP server started on port " + port);
+          } else {
+            startPromise.fail(http.cause());
+          }
+        });
+    }
 
 //    vertx.createHttpServer().requestHandler(req -> {
 //      req.response()
