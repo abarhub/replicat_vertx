@@ -1,6 +1,8 @@
 package com.example.starter;
 
-public class Files2 {
+import java.io.Serializable;
+
+public class Files2 implements Serializable {
   private String filename;
   private long size;
   private String hash;

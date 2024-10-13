@@ -28,8 +28,8 @@ public class HttpServerVerticle extends AbstractVerticle {
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpServerVerticle.class);
 
 
-  private AtomicInteger counter = new AtomicInteger(1);
-  private Map<Integer, GestionFichiers> listeGestionFichiers = new ConcurrentHashMap<Integer, GestionFichiers>();
+//  private AtomicInteger counter = new AtomicInteger(1);
+//  private Map<Integer, GestionFichiers> listeGestionFichiers = new ConcurrentHashMap<Integer, GestionFichiers>();
 
 
 
@@ -98,6 +98,7 @@ public class HttpServerVerticle extends AbstractVerticle {
     router.route("/listeFichiers/:id").method(HttpMethod.POST).blockingHandler(
       ctx -> {
 //        int nb = counter.getAndIncrement();
+        var res = "";
         String idStr = ctx.pathParam("id");
         LOGGER.atInfo().log("listeFichiers id: {}", idStr);
         HttpServerResponse response = ctx.response();
@@ -109,7 +110,7 @@ public class HttpServerVerticle extends AbstractVerticle {
 //        logger.info("liste fichier $idStr ...")
         if (idStr != null && !idStr.isBlank()) {
           var id = Integer.parseInt(idStr);
-          if (id > 0 && listeGestionFichiers.containsKey(id)) {
+          if (id > 0) {
 
             MultiMap attributes = ctx.request().formAttributes();
             LOGGER.atInfo().log("listeFichiers form: {}", attributes.entries());
@@ -119,9 +120,29 @@ public class HttpServerVerticle extends AbstractVerticle {
               try {
                 ListFiles2 liste = mapper.readValue(s, ListFiles2.class);
 
-                tmp = listeGestionFichiers.get(id).listeFichiers(liste);
-                LOGGER.info("listeFichiers $id OK");
-              } catch (IOException | NoSuchAlgorithmException e) {
+                Object tab[]={id,liste};
+                vertx.eventBus().request("worker.listeFichiers", tab, reply -> {
+                  if (reply.succeeded()) {
+//                    var nb="";
+//                    LOGGER.info("creation de la session {}", nb);
+                    var tmp2=(ListFiles2) reply.result().body();
+                    if(tmp2!=null) {
+                      tmp.setCode(tmp2.getCode());
+                      tmp.setListe(tmp2.getListe());
+                    }
+                    LOGGER.info("réponse tmp: {}",tmp);
+                    LOGGER.info("réponse tmp2: {}",tmp2);
+//                    ctx.response()
+//                      .putHeader("content-type", "text/plain")
+//                      .end(nb);
+                  } else {
+                    ctx.response().setStatusCode(500).end("Erreur lors du traitement.");
+                  }
+                });
+
+                //tmp = listeGestionFichiers.get(id).listeFichiers(liste);
+                //LOGGER.info("listeFichiers $id OK");
+              } catch (IOException e) {
                 LOGGER.error("erreur pour lire le data", e);
               }
             } else {
@@ -129,38 +150,59 @@ public class HttpServerVerticle extends AbstractVerticle {
               //LOGGER.error("body : '{}'", ctx.request().body());
             }
           } else {
-            LOGGER.info("pas de traitement pour $id");
+            LOGGER.info("pas de traitement pour {}",id);
           }
         }
         ObjectMapper objectMapper = new ObjectMapper();
-        var res = "";
+//        var res = "";
+        LOGGER.info("réponse tmp json: {}",tmp);
         try {
           res = objectMapper.writeValueAsString(tmp);
         } catch (JsonProcessingException e) {
           LOGGER.atError().log("JsonProcessingException", e);
         }
+        LOGGER.info("réponse res: {}",res);
         response.end(res);
+
+
       }
     );
 
     router.route("/upload/:id").method(HttpMethod.POST).blockingHandler(
       ctx -> {
 //        int nb = counter.getAndIncrement();
-        String res = "";
+        final StringBuffer res = new StringBuffer();
         String idStr = ctx.pathParam("id");
         LOGGER.atInfo().log("upload id: {}", idStr);
-        LOGGER.info("upload $idStr ...");
+        LOGGER.info("upload {} ...",idStr);
         //var idStr=attributes.get("data");
         if (idStr != null && !idStr.isBlank()) {
           var id = Integer.parseInt(idStr);
-          if (id > 0 && listeGestionFichiers.containsKey(id)) {
+          if (id > 0) {
             MultiMap attributes = ctx.request().formAttributes();
-            try {
-              res = listeGestionFichiers.get(id).upload(attributes);
-            } catch (IOException e) {
-              LOGGER.error("erreur pour uploader le fichier", e);
-            }
-            LOGGER.info("upload {} OK", idStr);
+            var file=attributes.get("file");
+            var filename=attributes.get("filename");
+            Object tab[]={id,file,filename};
+            vertx.eventBus().request("worker.listeFichiers", tab, reply -> {
+              if (reply.succeeded()) {
+//                    var nb="";
+//                    LOGGER.info("creation de la session {}", nb);
+                var res2=(String) reply.result().body();
+                res.setLength(0);
+                res.append(res2);
+//                    ctx.response()
+//                      .putHeader("content-type", "text/plain")
+//                      .end(nb);
+              } else {
+                ctx.response().setStatusCode(500).end("Erreur lors du traitement.");
+              }
+            });
+//            try {
+//              res = listeGestionFichiers.get(id).upload(attributes);
+//            } catch (IOException e) {
+//              LOGGER.error("erreur pour uploader le fichier", e);
+//            }
+//            LOGGER.info("upload {} OK", idStr);
           } else {
             LOGGER.info("pas de traitement pour {}", idStr);
           }
@@ -168,7 +210,7 @@ public class HttpServerVerticle extends AbstractVerticle {
         HttpServerResponse response = ctx.response();
         response.putHeader("content-type", "text/plain");
 //      var res=Future.succeededFuture(nb);
-        response.end(res);
+        response.end(res.toString());
       }
     );
 

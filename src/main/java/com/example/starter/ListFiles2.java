@@ -1,8 +1,9 @@
 package com.example.starter;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class ListFiles2 {
+public class ListFiles2 implements Serializable {
   private List<Files2> liste;
   private String code;
 

@@ -50,26 +50,26 @@ public class GestionFichiers {
         throw new IOException("Erreur dans le chemin");
       }
       if (Files.exists(f)) {
-        LOGGER.info("$f is exists");
+        LOGGER.info("{} is exists",f);
         if (Files.isDirectory(f)) {
-          throw new IOException("$f is a directory");
+          throw new IOException(f+" is a directory");
         }
         var contenu = Files.readAllBytes(f);
         if (file.getHash().isEmpty()) {
-          LOGGER.info("$f n'a pas de hash => on l'importe");
+          LOGGER.info("{} n'a pas de hash => on l'importe",f);
           liste.add(new Files2(file.getFilename(), 0, "", "F"));
         } else {
           //var hash = hashString(contenu, "SHA-256").toHex();
           var hash = hashString(contenu);
           if (hash.equals(file.getHash())) {
-            LOGGER.info("$f est identique");
+            LOGGER.info("{} est identique",f);
           } else {
-            LOGGER.info("$f est different => on l'importe");
+            LOGGER.info("{} est different => on l'importe",f);
             liste.add(new Files2(file.getFilename(), 0, "", "F"));
           }
         }
       } else {
-        LOGGER.info("$f is not exists");
+        LOGGER.info("{} is not exists",f);
         liste.add(new Files2(file.getFilename(), 0, "", "F"));
       }
     }
@@ -112,7 +112,45 @@ public class GestionFichiers {
 
         var s04 = Base64.getDecoder().decode(s4);
 
-        LOGGER.info("file $s5 size: {}", s4.length());
+        LOGGER.info("file {} size: {}", s5,s4.length());
+        var f = Paths.get(config.getRep(), s5);
+        LOGGER.info("f is '{}'", f);
+        if (Files.notExists(f.getParent())) {
+          LOGGER.info("création du répertoire {}", f.getParent());
+          Files.createDirectories(f.getParent());
+        }
+        Files.write(f, s04);
+        LOGGER.info("write {}", f);
+        res = "OK";
+      }
+
+
+    }
+    //}
+
+    //ctx.result(res)
+    return res;
+  }
+
+  public String upload(String file,String filename) throws IOException {
+    //val body = ctx.body();
+    LOGGER.info("upload size is ${body.length}");
+    var res = "KO";
+
+    //if (body.contains("=")) {
+    var config = MainVerticle.getConfig();
+
+    //var s4 = ctx.formParam("file");
+    var s4 = file;
+    if (s4 != null) {
+
+      //var s5 = ctx.formParam("filename");
+      var s5 = filename;
+      if (s5 != null) {
+
+        var s04 = Base64.getDecoder().decode(s4);
+
+        LOGGER.info("file {} size: {}", s5,s4.length());
         var f = Paths.get(config.getRep(), s5);
         LOGGER.info("f is '{}'", f);
         if (Files.notExists(f.getParent())) {
