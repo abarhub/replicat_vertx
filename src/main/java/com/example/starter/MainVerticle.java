@@ -208,8 +208,10 @@ public class MainVerticle extends AbstractVerticle {
   public static Config getConfig() throws IOException {
     var props = new Properties();
     var f = Paths.get("data/config.properties");
-    try (var input = Files.newInputStream(f)) {
-      props.load(input);
+    if(Files.exists(f)) {
+      try (var input = Files.newInputStream(f)) {
+        props.load(input);
+      }
     }
     var rep = props.getProperty("rep", "");
     return new Config(rep);
