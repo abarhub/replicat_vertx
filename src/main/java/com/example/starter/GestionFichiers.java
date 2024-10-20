@@ -46,7 +46,7 @@ public class GestionFichiers {
     for (var file : listeFiles2.getListe()) {
       var f = Paths.get(config.getRep(), file.getFilename());
       if (!f.startsWith(parent)) {
-        LOGGER.error("Le chemin est invalide ${file.filename} parent=${parent}");
+        LOGGER.error("Le chemin est invalide {} parent={}",f,parent);
         throw new IOException("Erreur dans le chemin");
       }
       if (Files.exists(f)) {

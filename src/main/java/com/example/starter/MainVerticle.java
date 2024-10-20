@@ -35,13 +35,15 @@ public class MainVerticle extends AbstractVerticle {
   public void start(Promise<Void> startPromise) throws Exception {
 
 //    int port = 7070;
-    int port=7071;
+//    int port=7071;
 
     String logFactory = System.getProperty("org.vertx.logger-delegate-factory-class-name");
     if (logFactory == null) {
       System.setProperty("org.vertx.logger-delegate-factory-class-name",
         SLF4JLogDelegateFactory.class.getName());
     }
+    var config=getConfig();
+    int port=config.getPort();
 
     HttpServer server = vertx.createHttpServer();
 
@@ -183,7 +185,7 @@ public class MainVerticle extends AbstractVerticle {
         .onComplete(http -> {
           if (http.succeeded()) {
             startPromise.complete();
-            System.out.println("HTTP server started on port " + port);
+            LOGGER.info("HTTP server started on port {}", port);
           } else {
             startPromise.fail(http.cause());
           }
@@ -214,7 +216,17 @@ public class MainVerticle extends AbstractVerticle {
       }
     }
     var rep = props.getProperty("rep", "");
-    return new Config(rep);
+    var portStr=props.getProperty("port", "");
+    int port=7070;
+    if(portStr != null && !portStr.isBlank()) {
+
+      try {
+        port = Integer.parseInt(portStr);
+      } catch (NumberFormatException e) {
+        LOGGER.error("impossible de lire le port '{}'",portStr);
+      }
+    }
+    return new Config(rep,port);
   }
 
 }
