@@ -18,6 +18,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class WorkerVerticle extends AbstractVerticle {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(WorkerVerticle.class);
+  public static final String WORKER_LISTE_FICHIERS = "worker.listeFichiers";
+  public static final String WORKER_INIT = "worker.init";
+  public static final String WORKER_TASK = "worker.task";
+  public static final String WORKER_UPLOAD = "worker.upload";
 
 
   private AtomicInteger counter = new AtomicInteger(1);
@@ -27,7 +31,7 @@ public class WorkerVerticle extends AbstractVerticle {
   @Override
   public void start() {
     // Ecouter les messages envoyés à l'Event Bus
-    vertx.eventBus().consumer("worker.task", message -> {
+    vertx.eventBus().consumer(WORKER_TASK, message -> {
       // Simuler une tâche bloquante (exemple: appel à un service ou calcul lourd)
       LOGGER.info("Worker received task: " + message.body());
 
@@ -41,7 +45,7 @@ public class WorkerVerticle extends AbstractVerticle {
       message.reply("Task completed for: " + message.body());
     });
 
-    vertx.eventBus().consumer("worker.init", message -> {
+    vertx.eventBus().consumer(WORKER_INIT, message -> {
       int nb = counter.getAndIncrement();
 
       String code = (String) message.body();
@@ -61,7 +65,7 @@ public class WorkerVerticle extends AbstractVerticle {
       message.reply("" + nb);
     });
 
-    vertx.eventBus().consumer("worker.listeFichiers", message -> {
+    vertx.eventBus().consumer(WORKER_LISTE_FICHIERS, message -> {
       Object tab[] = (Object[]) message.body();
       LOGGER.info("listeFichiers tab={}", tab);
       var tmp = new ListFiles2();
@@ -105,7 +109,7 @@ public class WorkerVerticle extends AbstractVerticle {
     });
 
 
-    vertx.eventBus().consumer("worker.upload", message -> {
+    vertx.eventBus().consumer(WORKER_UPLOAD, message -> {
 
       Object tab[] = (Object[]) message.body();
       int id = (Integer) tab[0];

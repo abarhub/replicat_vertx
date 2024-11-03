@@ -1,5 +1,6 @@
 package com.example.starter;
 
+import com.google.common.base.Verify;
 import com.google.common.io.BaseEncoding;
 import io.vertx.core.MultiMap;
 import org.slf4j.Logger;
@@ -15,7 +16,7 @@ import java.util.Base64;
 
 public class GestionFichiers {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GestionFichiers.class);
 
   private int id = 0;
   private final String code;
@@ -46,10 +47,10 @@ public class GestionFichiers {
     var parent = Paths.get(config.getRep());
     for (var file : listeFiles2.getListe()) {
       var f = Paths.get(config.getRep(), file.getFilename());
-      if (!f.startsWith(parent)) {
+      /*if (!f.startsWith(parent)) {
         LOGGER.error("Le chemin est invalide {} parent={}",f,parent);
         throw new IOException("Erreur dans le chemin");
-      }
+      }*/
       if (Files.exists(f)) {
         LOGGER.info("{} is exists",f);
         if (Files.isDirectory(f)) {
@@ -152,9 +153,12 @@ public class GestionFichiers {
         var s04 = Base64.getDecoder().decode(s4);
 
         LOGGER.info("file {} size: {}", s5,s4.length());
+        LOGGER.info("rep: '{}'", config.getRep());
+        Verify.verify(config.getRep()!=null&&!config.getRep().isBlank(),"le répertoire '%s' est vide",config.getRep());
         var f = Paths.get(config.getRep(), s5);
         LOGGER.info("f is '{}'", f);
-        if (Files.notExists(f.getParent())) {
+        Verify.verify(f.isAbsolute(),"fichier '%s' n'est pas absolu",f);
+        if (f.getParent()!=null&&Files.notExists(f.getParent())) {
           LOGGER.info("création du répertoire {}", f.getParent());
           Files.createDirectories(f.getParent());
         }

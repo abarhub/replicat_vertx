@@ -11,6 +11,7 @@ import com.google.common.base.Verify;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -94,7 +95,7 @@ public class HttpServerVerticle extends AbstractVerticle {
 
         final var code2=code;
 
-        vertx.eventBus().request("worker.init", code, reply -> {
+        vertx.eventBus().request(WorkerVerticle.WORKER_INIT, code, reply -> {
           if (reply.succeeded()) {
             var nb="";
             LOGGER.info("creation de la session {} (code:{})", nb, code2);
@@ -139,7 +140,7 @@ public class HttpServerVerticle extends AbstractVerticle {
                 ListFiles2 liste = mapper.readValue(s, ListFiles2.class);
 
                 Object tab[]={id,liste};
-                vertx.eventBus().request("worker.listeFichiers", tab, reply -> {
+                vertx.eventBus().request(WorkerVerticle.WORKER_LISTE_FICHIERS, tab, reply -> {
                   if (reply.succeeded()) {
 //                    var nb="";
 //                    LOGGER.info("creation de la session {}", nb);
@@ -201,7 +202,7 @@ public class HttpServerVerticle extends AbstractVerticle {
             var file=attributes.get("file");
             var filename=attributes.get("filename");
             Object tab[]={id,file,filename};
-            vertx.eventBus().request("worker.listeFichiers", tab, reply -> {
+            vertx.eventBus().request(WorkerVerticle.WORKER_UPLOAD, tab, reply -> {
               if (reply.succeeded()) {
 //                    var nb="";
 //                    LOGGER.info("creation de la session {}", nb);
@@ -233,11 +234,12 @@ public class HttpServerVerticle extends AbstractVerticle {
     );
 
     // Créer le serveur HTTP
-    vertx.createHttpServer().requestHandler(router).listen(port, res -> {
+    HttpServerOptions options = new HttpServerOptions().setMaxFormAttributeSize(10 * 1024 * 1024);
+    vertx.createHttpServer(options).requestHandler(router).listen(port, res -> {
       if (res.succeeded()) {
         LOGGER.info("HTTP server démarré sur le port {}",port);
       } else {
-        LOGGER.info("Erreur lors du démarrage du serveur HTTP: {}", res.cause());
+        LOGGER.info("Erreur lors du démarrage du serveur HTTP: {}",res.cause());
       }
     });
   }
