@@ -6,6 +6,8 @@ import com.example.starter.MainVerticle;
 import com.example.starter.RequestLogHandler;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
+import com.google.common.base.Verify;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpMethod;
@@ -68,6 +70,20 @@ public class HttpServerVerticle extends AbstractVerticle {
         MultiMap attributes = ctx.request().formAttributes();
         LOGGER.atInfo().log("init form: {}", attributes.entries());
 
+        var code="";
+        if(attributes.contains("data")){
+          var body=attributes.get("data");
+          try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            var node=objectMapper.reader().readTree(body);
+            if(node.has("noSauve")){
+              code=node.get("noSauve").asText();
+            }
+          }catch(JsonProcessingException e){
+            LOGGER.atError().log("Erreur pour parser le flux: {}", body, e);
+          }
+        }
+        Verify.verify(!Strings.isNullOrEmpty(code), "noSauve is empty");
 //        HttpServerResponse response = ctx.response();
 //        response.putHeader("content-type", "text/plain");
 //      var res=Future.succeededFuture(nb);
@@ -76,10 +92,12 @@ public class HttpServerVerticle extends AbstractVerticle {
 ////        gestion.id = no;
 //        listeGestionFichiers.put(nb, gestion);
 
-        vertx.eventBus().request("worker.init", "Processing task for client", reply -> {
+        final var code2=code;
+
+        vertx.eventBus().request("worker.init", code, reply -> {
           if (reply.succeeded()) {
             var nb="";
-            LOGGER.info("creation de la session {}", nb);
+            LOGGER.info("creation de la session {} (code:{})", nb, code2);
             nb=(String) reply.result().body();
             ctx.response()
               .putHeader("content-type", "text/plain")

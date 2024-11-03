@@ -17,11 +17,12 @@ public class GestionFichiers {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class);
 
-
   private int id = 0;
+  private final String code;
 
-  public GestionFichiers(int id) {
+  public GestionFichiers(int id, String code) {
     this.id = id;
+    this.code = code;
   }
 
   public ListFiles2 listeFichiers(ListFiles2 listeFiles2) throws IOException, NoSuchAlgorithmException {
